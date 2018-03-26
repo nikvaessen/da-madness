@@ -1,0 +1,917 @@
+---
+title: "Data Madness"
+author: "Bianca Iancu and Nik Vaessen"
+date: "March 25, 2018"
+output: html_document
+---
+
+```{r}
+library(tm)
+library(knitr)
+```
+
+
+#Read and Merge the data
+```{r}
+data2017 <- read.csv("cites2017.csv", na.strings=c(""))
+
+data2016 <- read.csv("cites2016.csv", na.strings=c(""))
+
+data2015_1 <- read.csv("cites2015_1.csv", na.strings=c(""))
+data2015_2 <- read.csv("cites2015_2.csv", na.strings=c(""))
+data2015_3 <- read.csv("cites2015_3.csv", na.strings=c(""))
+
+data2014_1 <- read.csv("cites2014_1.csv", na.strings=c(""))
+data2014_2 <- read.csv("cites2014_2.csv", na.strings=c(""))
+data2014_3 <- read.csv("cites2014_3.csv", na.strings=c(""))
+
+data2013_1 <- read.csv("cites2013_1.csv", na.strings=c(""))
+data2013_2 <- read.csv("cites2013_2.csv", na.strings=c(""))
+data2013_3 <- read.csv("cites2013_3.csv", na.strings=c(""))
+data2013_4 <- read.csv("cites2013_4.csv", na.strings=c(""))
+data2013_5 <- read.csv("cites2013_5.csv", na.strings=c(""))
+
+cites <- rbind(data2017, data2016, data2015_1, data2015_2, data2015_3, data2014_1, data2014_2, data2014_3, data2013_1, data2013_2, data2013_3, data2013_4, data2013_5)
+
+```
+
+#Database with the critically endangered species
+```{r}
+specie <- c('Panthera pardus', 'Diceros bicornis', 'Pongo pygmaeus', 'Gorilla gorilla diehli', 'Gorilla beringei graueri', 'Eretmochelys imbricata', 'Rhinoceros sondaicus', 'Panthera tigris jacksoni', 'Gorilla beringei beringei', 'Pongo abelii', 'Pongo pygmaeus', 'Pseudoryx nghetinhensis', 'Panthera tigris amoyensis', 'Elephas maximus', 'Dicerorhinus sumatrensis', 'Panthera tigris sumatrae', 'Phocoena sinus', 'Gorilla gorilla', 'Neophocaena asiaeorientalis ssp. asiaeorientalis')
+critically_endangered_species <- data.frame(specie)
+```
+
+
+#Exploratory Data Analysis
+
+Let's check how much data is missing and what are the possible values for the varibales of interest in the dataset.
+```{r}
+head(cites)
+str(cites)
+```
+
+```{r}
+colnames(cites)
+```
+
+```{r}
+length(unique(cites$Taxon))
+length(unique(cites$Class))
+length(unique(cites$Order))
+length(unique(cites$Family))
+length(unique(cites$Genus))
+```
+
+```{r}
+length(unique(cites$Importer))
+length(unique(cites$Exporter))
+```
+
+```{r}
+length(unique(cites$Term))
+```
+
+```{r}
+length(unique(cites$Purpose))
+length(unique(cites$Source))
+```
+
+```{r}
+print(c("Taxon: ", sum(is.na(cites$Taxon))))
+print(c("Class: ", sum(is.na(cites$Class))))
+print(c("Order: ", sum(is.na(cites$Order))))
+print(c("Family: ", sum(is.na(cites$Family))))
+print(c("Genus: ", sum(is.na(cites$Genus))))
+print(c("Importer: ", sum(is.na(cites$Importer))))
+print(c("Exporter: ", sum(is.na(cites$Exporter))))
+print(c("Term: ", sum(is.na(cites$Term))))
+print(c("Purpose: ", sum(is.na(cites$Purpose))))
+print(c("Source: ", sum(is.na(cites$Source))))
+```
+
+#Select specific columns and remove na values
+```{r}
+cites_selected <- cites[, c("Year", "Taxon", "Family", "Genus", "Importer", "Exporter", "Term", "Purpose", "Source")]
+cites_selected = cites_selected[complete.cases(cites_selected), ]
+sum(is.na(cites_selected))
+```
+
+#Check most traded species
+```{r}
+freq_to_sorted = sort(table(cites_selected$Taxon), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+
+
+```{r}
+freq_to_sorted = sort(table(cites_selected$Family), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_selected$Genus), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+#Check the most frequent resons for trading
+```{r}
+freq_to_sorted = sort(table(cites_selected$Purpose), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:12)])
+```
+
+We can observe the most frequent purpose for trading is represented by commercial use. 
+
+Let's now have a look only at top 3 most traded purposes and also at the ones traded for breeding in captivity or artifical propagation.
+
+```{r}
+cites_commercial <- cites_selected[cites_selected$Purpose == 'T',]
+dim(cites_commercial)
+
+cites_personal <- cites_selected[cites_selected$Purpose == 'P',]
+dim(cites_personal)
+
+cites_hunting <- cites_selected[cites_selected$Purpose == 'H',]
+dim(cites_hunting)
+
+cites_breeding <- cites_selected[cites_selected$Purpose == 'B',]
+dim(cites_breeding)
+```
+
+Compute percentages: 
+```{r}
+commercial <- nrow(cites_commercial)
+personal <- nrow(cites_personal)
+hunting <- nrow(cites_hunting)
+breeding <- nrow(cites_breeding)
+
+percentage_commercial <- (commercial*100)/(nrow(cites_selected))
+percentage_personal <- (personal*100)/(nrow(cites_selected))
+percentage_hunting <- (hunting*100)/(nrow(cites_selected))
+percentage_breeding <- (breeding*100)/(nrow(cites_selected))
+
+percentage_commercial
+percentage_personal
+percentage_hunting
+percentage_breeding
+```
+
+
+#Commercial trading
+
+Questions:
+
+  1. Which are the species that are traded the most for commercial purposes?
+  2. Are there any importing or exporting hostspots?
+  3. Are there any frequent sources of commercial trading?
+  4. Are there any critically endangered specimens that are being traded for commercial purposes?
+  5. What percent of the trades are represented by live animals and what percent by animal products?
+
+Let's start by looking at the species that are being traded the most for commercial purpose.
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Taxon), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Family), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Genus), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+We can notice that most of the animals that are being traded for commercial purpose are reptiles.
+
+Let's now actually have a look at the way they are being traded (live or animal product).
+
+First, I'll compute the percentages.
+```{r}
+live <- sum(cites_commercial$Term == 'live')
+non_live <- nrow(cites_commercial) - live
+
+percentage_live <- (live*100)/(nrow(cites_commercial))
+percentage_non_live <- (non_live*100)/(nrow(cites_commercial))
+
+percentage_live
+percentage_non_live
+```
+
+Let's see now for the non live trading which are the most frequent forms.
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Term[cites_commercial$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+Let's look at the importing and exporting countries based on the type of product (whether it is a live animal or not).
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Importer[cites_commercial$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Importer[cites_commercial$Term == 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Exporter[cites_commercial$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+Let's look what are non live products that are exported by Italy.
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Term[cites_commercial$Importer != 'IT' & cites_commercial$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Exporter[cites_commercial$Term == 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_commercial$Source[cites_commercial$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+
+Check is any of the animals that are traded for commercial purposes are part of the critically endangered species.
+```{r}
+for (i in (1:nrow(critically_endangered_species))){
+  if(sum(cites_commercial$Taxon == toString(critically_endangered_species[i,1])) != 0){
+    print(critically_endangered_species[i,1])
+  }
+}
+```
+
+Let's not check the purpose for which these endangered animals are being traded.
+```{r}
+
+#Panthera pardus
+freq_to_sorted = sort(table(cites_commercial$Purpose[cites_commercial$Taxon == 'Panthera pardus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_commercial$Source[cites_commercial$Taxon == 'Panthera pardus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_commercial$Term[cites_commercial$Taxon == 'Panthera pardus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+```{r}
+#Diceros bicornis
+freq_to_sorted = sort(table(cites_commercial$Purpose[cites_commercial$Taxon == 'Diceros bicornis']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_commercial$Source[cites_commercial$Taxon == 'Diceros bicornis']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_commercial$Term[cites_commercial$Taxon == 'Diceros bicornis']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+
+```{r}
+#Pongo pygmaeus
+freq_to_sorted = sort(table(cites_commercial$Purpose[cites_commercial$Taxon == 'Pongo pygmaeus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_commercial$Source[cites_commercial$Taxon == 'Pongo pygmaeus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_commercial$Term[cites_commercial$Taxon == 'Pongo pygmaeus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+
+```{r}
+#Eretmochelys imbricata
+freq_to_sorted = sort(table(cites_commercial$Purpose[cites_commercial$Taxon == 'Eretmochelys imbricata']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_commercial$Source[cites_commercial$Taxon == 'Eretmochelys imbricata']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_commercial$Term[cites_commercial$Taxon == 'Eretmochelys imbricata']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+
+```{r}
+#Rhinoceros sondaicus
+freq_to_sorted = sort(table(cites_commercial$Purpose[cites_commercial$Taxon == 'Rhinoceros sondaicus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_commercial$Source[cites_commercial$Taxon == 'Rhinoceros sondaicus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_commercial$Term[cites_commercial$Taxon == 'Rhinoceros sondaicus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+```{r}
+#Elephas maximus
+freq_to_sorted = sort(table(cites_commercial$Purpose[cites_commercial$Taxon == 'Elephas maximus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_commercial$Source[cites_commercial$Taxon == 'Elephas maximus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_commercial$Term[cites_commercial$Taxon == 'Elephas maximus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+#Personal trading
+Questions:
+
+  1. Which are the species that are traded the most for personal purposes?
+  2. Are there any importing or exporting hostspots?
+  3. Are there any frequent sources of personal trading?
+  4. Are there any critically endangered specimens that are being traded for persnal purposes?
+  5. What percent of the trades are represented by live animals and what percent by animal products?
+
+Let's start by looking at the species that are being traded the most for personal purpose.
+
+```{r}
+freq_to_sorted = sort(table(cites_personal$Taxon), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_personal$Family), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_personal$Genus), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+
+Let's now actually have a look at the way they are being traded (live or animal product).
+
+First, I'll compute the percentages.
+```{r}
+live <- sum(cites_personal$Term == 'live')
+non_live <- nrow(cites_personal) - live
+
+percentage_live <- (live*100)/(nrow(cites_personal))
+percentage_non_live <- (non_live*100)/(nrow(cites_personal))
+
+percentage_live
+percentage_non_live
+```
+
+Let's see now for the non live trading which are the most frequent forms.
+
+```{r}
+freq_to_sorted = sort(table(cites_personal$Term[cites_personal$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+Let's look at the importing and exporting countries based on the type of product (whether it is a live animal or not).
+
+```{r}
+freq_to_sorted = sort(table(cites_personal$Importer[cites_personal$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+
+```{r}
+freq_to_sorted = sort(table(cites_personal$Importer[cites_personal$Term == 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_personal$Exporter[cites_personal$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+
+
+```{r}
+freq_to_sorted = sort(table(cites_personal$Exporter[cites_personal$Term == 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_personal$Source[cites_personal$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+
+Check is any of the animals that are traded for commercial purposes are part of the critically endangered species.
+```{r}
+for (i in (1:nrow(critically_endangered_species))){
+  if(sum(cites_personal$Taxon == toString(critically_endangered_species[i,1])) != 0){
+    print(critically_endangered_species[i,1])
+  }
+}
+```
+
+Let's not check the purpose for which these endangered animals are being traded.
+```{r}
+
+#Panthera pardus
+freq_to_sorted = sort(table(cites_personal$Purpose[cites_personal$Taxon == 'Panthera pardus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_personal$Source[cites_personal$Taxon == 'Panthera pardus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_personal$Term[cites_personal$Taxon == 'Panthera pardus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+```{r}
+#Diceros bicornis
+freq_to_sorted = sort(table(cites_personal$Purpose[cites_personal$Taxon == 'Diceros bicornis']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_personal$Source[cites_personal$Taxon == 'Diceros bicornis']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_personal$Term[cites_personal$Taxon == 'Diceros bicornis']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+
+```{r}
+#Pongo pygmaeus
+freq_to_sorted = sort(table(cites_personal$Purpose[cites_personal$Taxon == 'Pongo pygmaeus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_personal$Source[cites_personal$Taxon == 'Pongo pygmaeus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_personal$Term[cites_personal$Taxon == 'Pongo pygmaeus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+
+```{r}
+#Eretmochelys imbricata
+freq_to_sorted = sort(table(cites_personal$Purpose[cites_personal$Taxon == 'Eretmochelys imbricata']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_personal$Source[cites_personal$Taxon == 'Eretmochelys imbricata']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_personal$Term[cites_personal$Taxon == 'Eretmochelys imbricata']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+
+```{r}
+#Rhinoceros sondaicus
+freq_to_sorted = sort(table(cites_personal$Purpose[cites_personal$Taxon == 'Rhinoceros sondaicus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_personal$Source[cites_personal$Taxon == 'Rhinoceros sondaicus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_personal$Term[cites_personal$Taxon == 'Rhinoceros sondaicus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+```{r}
+#Elephas maximus
+freq_to_sorted = sort(table(cites_personal$Purpose[cites_personal$Taxon == 'Elephas maximus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_personal$Source[cites_personal$Taxon == 'Elephas maximus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_personal$Term[cites_personal$Taxon == 'Elephas maximus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+#Hunting trophy trading
+Questions:
+
+  1. Which are the species that are traded the most for hunting trophy purposes?
+  2. Are there any importing or exporting hostspots?
+  3. Are there any frequent sources of hunting trophy trading?
+  4. Are there any critically endangered specimens that are being traded for hunting trophy purposes?
+  5. What percent of the trades are represented by live animals and what percent by animal products?
+
+Let's start by looking at the species that are being traded the most for hunting trophy purpose.
+
+```{r}
+freq_to_sorted = sort(table(cites_hunting$Taxon), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_hunting$Family), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_hunting$Genus), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+
+Let's now actually have a look at the way they are being traded (live or animal product).
+
+First, I'll compute the percentages.
+```{r}
+live <- sum(cites_hunting$Term == 'live')
+non_live <- nrow(cites_hunting) - live
+
+percentage_live <- (live*100)/(nrow(cites_hunting))
+percentage_non_live <- (non_live*100)/(nrow(cites_hunting))
+
+percentage_live
+percentage_non_live
+```
+
+Let's see now for the non live trading which are the most frequent forms.
+
+```{r}
+freq_to_sorted = sort(table(cites_hunting$Term[cites_hunting$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+Let's look at the importing and exporting countries based on the type of product (whether it is a live animal or not).
+
+```{r}
+freq_to_sorted = sort(table(cites_hunting$Importer[cites_hunting$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+
+```{r}
+freq_to_sorted = sort(table(cites_hunting$Importer[cites_hunting$Term == 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_hunting$Exporter[cites_hunting$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+
+```{r}
+freq_to_sorted = sort(table(cites_hunting$Exporter[cites_hunting$Term == 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
+```{r}
+freq_to_sorted = sort(table(cites_hunting$Source[cites_hunting$Term != 'live']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+```
+
+
+Check is any of the animals that are traded for commercial purposes are part of the critically endangered species.
+```{r}
+for (i in (1:nrow(critically_endangered_species))){
+  if(sum(cites_hunting$Taxon == toString(critically_endangered_species[i,1])) != 0){
+    print(critically_endangered_species[i,1])
+  }
+}
+```
+
+Let's not check the purpose for which these endangered animals are being traded.
+```{r}
+
+#Panthera pardus
+freq_to_sorted = sort(table(cites_hunting$Purpose[cites_hunting$Taxon == 'Panthera pardus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_hunting$Source[cites_hunting$Taxon == 'Panthera pardus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_hunting$Term[cites_hunting$Taxon == 'Panthera pardus']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+```{r}
+#Diceros bicornis
+freq_to_sorted = sort(table(cites_hunting$Purpose[cites_hunting$Taxon == 'Diceros bicornis']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:3)])
+
+freq_to_sorted = sort(table(cites_hunting$Source[cites_hunting$Taxon == 'Diceros bicornis']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+freq_to_sorted = sort(table(cites_hunting$Term[cites_hunting$Taxon == 'Diceros bicornis']), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:10)])
+
+```
+
+
+#Trends over the years
+```{r}
+cites2015 <- rbind(data2015_1, data2015_2, data2015_3)
+
+cites2014 <- rbind(data2014_1, data2014_2, data2014_3)
+
+cites2013 <- rbind(data2013_1, data2013_2, data2013_3, data2013_4, data2013_5)
+
+
+```
+
+Compute percentages: 
+```{r}
+cites2017 <- data2017
+
+cites_commercial <- cites2017[cites2017$Purpose == 'T',]
+#dim(cites_commercial)
+
+cites_personal <- cites2017[cites2017$Purpose == 'P',]
+#dim(cites_personal)
+
+cites_hunting <- cites2017[cites2017$Purpose == 'H',]
+#dim(cites_hunting)
+
+
+commercial <- nrow(cites_commercial)
+personal <- nrow(cites_personal)
+hunting <- nrow(cites_hunting)
+
+
+percentage_commercial <- (commercial*100)/(nrow(cites2017))
+percentage_personal <- (personal*100)/(nrow(cites2017))
+percentage_hunting <- (hunting*100)/(nrow(cites2017))
+
+percentage_commercial
+percentage_personal
+percentage_hunting
+
+```
+
+```{r}
+cites2016 <- data2016
+
+cites_commercial <- cites2016[cites2016$Purpose == 'T',]
+#dim(cites_commercial)
+
+cites_personal <- cites2016[cites2016$Purpose == 'P',]
+#dim(cites_personal)
+
+cites_hunting <- cites2016[cites2016$Purpose == 'H',]
+#dim(cites_hunting)
+
+
+commercial <- nrow(cites_commercial)
+personal <- nrow(cites_personal)
+hunting <- nrow(cites_hunting)
+
+
+percentage_commercial <- (commercial*100)/(nrow(cites2016))
+percentage_personal <- (personal*100)/(nrow(cites2016))
+percentage_hunting <- (hunting*100)/(nrow(cites2016))
+
+percentage_commercial
+percentage_personal
+percentage_hunting
+
+```
+
+```{r}
+
+cites_commercial <- cites2015[cites2015$Purpose == 'T',]
+#dim(cites_commercial)
+
+cites_personal <- cites2015[cites2015$Purpose == 'P',]
+#dim(cites_personal)
+
+cites_hunting <- cites2015[cites2015$Purpose == 'H',]
+#dim(cites_hunting)
+
+
+commercial <- nrow(cites_commercial)
+personal <- nrow(cites_personal)
+hunting <- nrow(cites_hunting)
+
+
+percentage_commercial <- (commercial*100)/(nrow(cites2015))
+percentage_personal <- (personal*100)/(nrow(cites2015))
+percentage_hunting <- (hunting*100)/(nrow(cites2015))
+
+percentage_commercial
+percentage_personal
+percentage_hunting
+
+```
+
+```{r}
+
+cites_commercial <- cites2014[cites2014$Purpose == 'T',]
+#dim(cites_commercial)
+
+cites_personal <- cites2014[cites2014$Purpose == 'P',]
+#dim(cites_personal)
+
+cites_hunting <- cites2014[cites2014$Purpose == 'H',]
+#dim(cites_hunting)
+
+
+commercial <- nrow(cites_commercial)
+personal <- nrow(cites_personal)
+hunting <- nrow(cites_hunting)
+
+
+percentage_commercial <- (commercial*100)/(nrow(cites2014))
+percentage_personal <- (personal*100)/(nrow(cites2014))
+percentage_hunting <- (hunting*100)/(nrow(cites2014))
+
+percentage_commercial
+percentage_personal
+percentage_hunting
+
+```
+
+```{r}
+
+cites_commercial <- cites2013[cites2013$Purpose == 'T',]
+dim(cites_commercial)
+
+cites_personal <- cites2013[cites2013$Purpose == 'P',]
+dim(cites_personal)
+
+cites_hunting <- cites2013[cites2013$Purpose == 'H',]
+dim(cites_hunting)
+
+dim(cites2013)
+
+commercial <- nrow(cites_commercial)
+personal <- nrow(cites_personal)
+hunting <- nrow(cites_hunting)
+
+
+percentage_commercial <- (commercial*100)/(nrow(cites2013))
+percentage_personal <- (personal*100)/(nrow(cites2013))
+percentage_hunting <- (hunting*100)/(nrow(cites2013))
+
+percentage_commercial
+percentage_personal
+percentage_hunting
+
+```
+
+```{r}
+year <- c(2013, 2014, 2015, 2016, 2017)
+perc <- c(76.97669, 77.63879, 78.09348, 80.13854, 64.8855)
+
+plot(year,perc,type='l',col="blue",xlab="Year",ylab="Percent of commercial trades")
+```
+
+
+#Frequency of critically endangeres species being traded
+
+```{r}
+
+specie <- rep(NA, nrow(critically_endangered_species))
+trades <- rep(NA, nrow(critically_endangered_species))
+percentage <- rep(NA, nrow(critically_endangered_species))
+
+
+for (i in (1:nrow(critically_endangered_species))){
+  s <- sum(cites$Taxon == toString(critically_endangered_species[i,1]))
+  trades[i] <- s
+  percentage[i] <- (s*100)/(nrow(cites))
+  specie[i] <- toString(critically_endangered_species[i,1])
+}
+
+end <- data.frame(specie, trades, percentage)
+end <- end[order(-end$trades),]
+end
+```
+
+#Is there any association between source and purpose?
+
+In order to check this, a chi-square test will be performed.
+
+```{r}
+chisq_df <- cites[,c("Purpose", "Source")]
+chisq_df <-  chisq_df[complete.cases(chisq_df), ]
+
+chisq_df$Purpose[chisq_df$Purpose == 'T'] <- 1
+chisq_df$Purpose[chisq_df$Purpose == 'P'] <- 2
+chisq_df$Purpose[chisq_df$Purpose == 'H'] <- 3
+chisq_df$Purpose[chisq_df$Purpose == 'S'] <- 4
+chisq_df$Purpose[chisq_df$Purpose == 'Q'] <- 5
+chisq_df$Purpose[chisq_df$Purpose == 'Z'] <- 6
+chisq_df$Purpose[chisq_df$Purpose == 'M'] <- 7
+chisq_df$Purpose[chisq_df$Purpose == 'B'] <- 8
+chisq_df$Purpose[chisq_df$Purpose == 'E'] <- 9
+chisq_df$Purpose[chisq_df$Purpose == 'G'] <- 10
+chisq_df$Purpose[chisq_df$Purpose == 'N'] <- 11
+chisq_df$Purpose[chisq_df$Purpose == 'L'] <- 12
+
+chisq_df$Source[chisq_df$Source == 'W'] <- 1
+chisq_df$Source[chisq_df$Source == 'A'] <- 2
+chisq_df$Source[chisq_df$Source == 'C'] <- 3
+chisq_df$Source[chisq_df$Source == 'F'] <- 4
+chisq_df$Source[chisq_df$Source == 'O'] <- 5
+chisq_df$Source[chisq_df$Source == 'D'] <- 6
+chisq_df$Source[chisq_df$Source == 'I'] <- 7
+chisq_df$Source[chisq_df$Source == 'R'] <- 8
+chisq_df$Source[chisq_df$Source == 'U'] <- 9
+chisq_df$Source[chisq_df$Source == 'X'] <- 10
+
+chisq.test(chisq_df)
+```
+
+```{r}
+freq_to_sorted = sort(table(chisq_df$Source), decreasing = TRUE)
+n = length(freq_to_sorted)
+kable(freq_to_sorted[c(0:20)])
+```
+
