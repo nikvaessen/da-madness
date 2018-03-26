@@ -881,6 +881,11 @@ In order to check this, a chi-square test will be performed.
 ```{r}
 chisq_df <- cites[,c("Purpose", "Source")]
 chisq_df <-  chisq_df[complete.cases(chisq_df), ]
+sum(is.na(chisq_df))
+```
+
+```{r}
+chisq_df$Purpose = as.character(chisq_df$Purpose)
 
 chisq_df$Purpose[chisq_df$Purpose == 'T'] <- 1
 chisq_df$Purpose[chisq_df$Purpose == 'P'] <- 2
@@ -895,6 +900,12 @@ chisq_df$Purpose[chisq_df$Purpose == 'G'] <- 10
 chisq_df$Purpose[chisq_df$Purpose == 'N'] <- 11
 chisq_df$Purpose[chisq_df$Purpose == 'L'] <- 12
 
+chisq_df$Purpose = as.integer(chisq_df$Purpose)
+```
+
+```{r}
+chisq_df$Source = as.character(chisq_df$Source)
+
 chisq_df$Source[chisq_df$Source == 'W'] <- 1
 chisq_df$Source[chisq_df$Source == 'A'] <- 2
 chisq_df$Source[chisq_df$Source == 'C'] <- 3
@@ -906,8 +917,19 @@ chisq_df$Source[chisq_df$Source == 'R'] <- 8
 chisq_df$Source[chisq_df$Source == 'U'] <- 9
 chisq_df$Source[chisq_df$Source == 'X'] <- 10
 
+chisq_df$Source = as.integer(chisq_df$Source)
+```
+
+```{r}
+unique(chisq_df$Purpose)
+unique(chisq_df$Source)
+```
+
+
+```{r}
 chisq.test(chisq_df)
 ```
+
 
 ```{r}
 freq_to_sorted = sort(table(chisq_df$Source), decreasing = TRUE)
