@@ -1,7 +1,7 @@
 ### Analysis on CITES Wildlife Trade Database
 By Bianca Iancu and Nik Vaessen
 
-Recently, a new story came to light about the possible extinction of a species [1]. Sudan, a northern white rhino, died in Kenya at the age of 45 due to age related complications. He was the last male individual alive, as northern white rhinos have been hunted and traded over years for their horns, which some think represent a cure for cancer [2]. Although scientists are focusing on creating offspring based on two still living females using newly developed techniques in cellular technology, the success is not guaranteed and Sudan’s death might mark the extinction of his specie.
+Recently, a new story came to light about the possible extinction of a species [1]. Sudan, a northern white rhino, died in Kenya at the age of 45 due to age related complications. He was the last male individual alive, as northern white rhinos have been hunted and traded over years for their horns, which some think represent a cure for cancer [2]. Although scientists are focusing on creating offspring based on two still living females using newly developed techniques in cellular technology, the success is not guaranteed and Sudan’s death might mark the extinction of his species.
 
 Having this in mind, we decided to focus on analyzing the current situation concerning wildlife trades. For this, the dataset provided by the Convention on International Trade in Endangered Species of Wild Fauna and Flora (CITES) [3] was used over a period of four years, from 2013 to 2016. It contains information on the wildlife trades that are carried out around the world, regarding the species that are being traded, the importing and exporting countries, the purpose of the trade, as well as the source.
 
