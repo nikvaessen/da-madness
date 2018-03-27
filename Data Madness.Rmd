@@ -8,6 +8,11 @@ output: html_document
 ```{r}
 library(tm)
 library(knitr)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+library(treemapify)
+library(rworldmap)
 ```
 
 
@@ -97,6 +102,7 @@ sum(is.na(cites_selected))
 ```
 
 #Check most traded species
+
 ```{r}
 freq_to_sorted = sort(table(cites_selected$Taxon), decreasing = TRUE)
 n = length(freq_to_sorted)
@@ -935,5 +941,175 @@ chisq.test(chisq_df)
 freq_to_sorted = sort(table(chisq_df$Source), decreasing = TRUE)
 n = length(freq_to_sorted)
 kable(freq_to_sorted[c(0:20)])
+```
+
+### Specifically looking into rhino's
+
+```{r}
+rhinos = filter(cites, cites$Family == "Rhinocerotidae")
+
+rhinos$purp <- ifelse(rhinos$Purpose=="B", "Breeding",
+                  ifelse( rhinos$Purpose=="E", "Educational",
+                 ifelse ( rhinos$Purpose=="G", "Garden",
+                 ifelse( rhinos$Purpose=="H", "Hunting",
+                 ifelse ( rhinos$Purpose=="L", "Law",
+                ifelse ( rhinos$Purpose=="M", "Medical",
+                 ifelse( rhinos$Purpose=="R", "Reintroduction to wild",
+                 ifelse ( rhinos$Purpose=="P", "Personal",
+                 ifelse ( rhinos$Purpose=="Q", "Circus",
+                 ifelse( rhinos$Purpose=="S", "Scientific",
+                 ifelse ( rhinos$Purpose=="T", "Commercial",
+                 ifelse ( rhinos$Purpose=="Z", "Zoo",
+                            "Unknown"))))))))))))
+
+rhinos$expcountry =
+                ifelse(rhinos$Exporter %in% c("CN", "HK"), "China",
+                 ifelse( rhinos$Exporter=="US", "USA",
+                 ifelse ( rhinos$Exporter=="AE", "Unite Arab Emirates",
+                 ifelse( rhinos$Exporter=="BE", "Belgium",
+                 ifelse ( rhinos$Exporter=="CZ", "Czech Republic",
+                ifelse ( rhinos$Exporter=="NL", "Netherlands",
+                 ifelse( rhinos$Exporter=="ID", "Indonesia",
+                 ifelse ( rhinos$Exporter=="IT", "Italy",
+                 ifelse ( rhinos$Exporter=="SG", "Singerpore",
+                 ifelse( rhinos$Exporter=="MY", "Malaysia",
+                 ifelse ( rhinos$Exporter=="JP", "Japan",
+                 ifelse ( rhinos$Exporter=="MG", "Madagascar",
+                 ifelse ( rhinos$Exporter=="FR", "France",
+                 ifelse ( rhinos$Exporter=="DE", "Germany",
+                          ifelse ( rhinos$Exporter=="GB", "Britain",
+                 ifelse ( rhinos$Exporter=="PE", "Peru",
+                ifelse ( rhinos$Exporter=="DE", "Germany",
+                          ifelse ( rhinos$Exporter=="ES", "Spain",
+                 ifelse ( rhinos$Exporter=="ZW", "Zimbabwe",
+                  ifelse ( rhinos$Exporter=="PH", "Philippines",
+                 ifelse ( rhinos$Exporter=="MC", "Monaco",
+                           ifelse ( rhinos$Exporter=="IL", "Israel",
+                  ifelse ( rhinos$Exporter=="AR", "Argentina",
+                 ifelse ( rhinos$Exporter=="GT", "Guatemala",
+                           ifelse ( rhinos$Exporter=="KW", "Kuwait",
+                 ifelse ( rhinos$Exporter=="DK", "Denmark",
+                            ifelse ( rhinos$Exporter=="UY", "Uruguay",
+                 ifelse ( rhinos$Exporter=="GE", "Geogria",
+                           ifelse ( rhinos$Exporter=="PL", "Poland",
+                 ifelse ( rhinos$Exporter=="TN", "Tunisia",
+                                 ifelse ( rhinos$Exporter=="KE", "Kenya",
+                 ifelse ( rhinos$Exporter=="NO", "Norway",
+                           ifelse ( rhinos$Exporter=="UG", "Uganda",
+                 ifelse ( rhinos$Exporter=="MA", "Morocco",
+                                   ifelse ( rhinos$Exporter=="BS", "Bahamas",
+                 ifelse ( rhinos$Exporter=="NP", "Nepal",
+                           ifelse ( rhinos$Exporter=="IN", "India",
+                 ifelse ( rhinos$Exporter=="NI", "Nicaragua",
+                                  ifelse ( rhinos$Exporter=="PY", "Paraguay",
+                 ifelse ( rhinos$Exporter=="AM", "Armenia",
+                                   ifelse ( rhinos$Exporter=="TH", "Thailand",
+                 ifelse ( rhinos$Exporter=="CA", "Canada",
+                                  ifelse ( rhinos$Exporter=="NG", "Nigeria",
+                 ifelse ( rhinos$Exporter=="MX", "Mexico",
+                          
+                                       ifelse ( rhinos$Exporter=="CM", "Cameroon",
+                 ifelse ( rhinos$Exporter=="FJ", "Fiji",
+                                  ifelse ( rhinos$Exporter=="ZA", "South Africa",
+                 ifelse ( rhinos$Exporter=="JM", "Jamaica",
+                           ifelse ( rhinos$Exporter=="AD", "Andorra",
+                            rhinos$Exporter)))))))))))))))))))))))))))))))))))))))))))))))))
+
+
+rhinos$impcountry <- ifelse(rhinos$Importer %in% c("CN", "HK"), "China",
+                 ifelse( rhinos$Importer=="US", "USA",
+                 ifelse ( rhinos$Importer=="AE", "Unite Arab Emirates",
+                 ifelse( rhinos$Importer=="BE", "Belgium",
+                 ifelse ( rhinos$Importer=="CZ", "Czech Republic",
+                ifelse ( rhinos$Importer=="NL", "Netherlands",
+                 ifelse( rhinos$Importer=="ID", "India",
+                 ifelse ( rhinos$Importer=="IT", "Italy",
+                 ifelse ( rhinos$Importer=="SG", "Singerpore",
+                 ifelse( rhinos$Importer=="MY", "Malaysia",
+                 ifelse ( rhinos$Importer=="JP", "Japan",
+                 ifelse ( rhinos$Importer=="MG", "Madagascar",
+                 ifelse ( rhinos$Importer=="FR", "France",
+                 ifelse ( rhinos$Importer=="DE", "Germany",
+                          ifelse ( rhinos$Importer=="GB", "Britain",
+                 ifelse ( rhinos$Importer=="PE", "Peru",
+                ifelse ( rhinos$Importer=="DE", "Germany",
+                          ifelse ( rhinos$Importer=="ES", "Spain",
+                 ifelse ( rhinos$Importer=="ZW", "Zimbabwe",
+                  ifelse ( rhinos$Importer=="PH", "Philippines",
+                 ifelse ( rhinos$Importer=="MC", "Monaco",
+                                        ifelse ( rhinos$Exporter=="IL", "Israel",
+                  ifelse ( rhinos$Importer=="AR", "Argentina",
+                 ifelse ( rhinos$Importer=="GT", "Guatemala",
+                           ifelse ( rhinos$Importer=="KW", "Kuwait",
+                 ifelse ( rhinos$Importer=="DK", "Denmark",
+                                           ifelse ( rhinos$Importer=="UY", "Uruguay",
+                 ifelse ( rhinos$Importer=="GE", "Geogria",
+                           ifelse ( rhinos$Importer=="PL", "Poland",
+                 ifelse ( rhinos$Importer=="TN", "Tunisia",
+                                 ifelse ( rhinos$Importer=="KE", "Kenya",
+                 ifelse ( rhinos$Importer=="NO", "Norway",
+                           ifelse ( rhinos$Importer=="UG", "Uganda",
+                 ifelse ( rhinos$Importer=="MA", "Morocco",
+                                   ifelse ( rhinos$Importer=="BS", "Bahamas",
+                 ifelse ( rhinos$Importer=="NP", "Nepal",
+                           ifelse ( rhinos$Importer=="IN", "India",
+                 ifelse ( rhinos$Importer=="NI", "Nicaragua",
+                                  ifelse ( rhinos$Importer=="PY", "Paraguay",
+                 ifelse ( rhinos$Importer=="AM", "Armenia",
+                                   ifelse ( rhinos$Importer=="TH", "Thailand",
+                 ifelse ( rhinos$Importer=="CA", "Canada",
+                                  ifelse ( rhinos$Importer=="NG", "Nigeria",
+                 ifelse ( rhinos$Importer=="MX", "Mexico",
+                          
+                                       ifelse ( rhinos$Importer=="CM", "Cameroon",
+                 ifelse ( rhinos$Importer=="FJ", "Fiji",
+                                  ifelse ( rhinos$Importer=="ZA", "South Africa",
+                 ifelse ( rhinos$Importer=="JM", "Jamaica",
+                           ifelse ( rhinos$Importer=="AD", "Andorra",
+                            rhinos$Importer)))))))))))))))))))))))))))))))))))))))))))))))))
+
+```
+
+```{r}
+rh_p_table = data.frame(table(rhinos$purp))
+rh_p_table = rh_p_table[order(rh_p_table$Freq), ]
+
+rhino_plot = ggplot(rh_p_table, aes(x=reorder(rh_p_table$Var1, Freq), y = rh_p_table$Freq, fill = Var1)) + geom_bar(stat='identity') +theme(legend.position="none", axis.text.x = element_text(angle = 90, hjust = 1)) + xlab("Purpose of Rhinocerotidae trade") + ylab("Count")
+
+rhino_plot
+```
+
+
+```{r}
+rhino_hunting = filter(rhinos, rhinos$purp == "Hunting")
+rhino_term_hunting = data.frame(table(rhino_hunting$Term))
+rhino_term_hunting = rhino_term_hunting[rhino_term_hunting$Freq > 5,]
+
+rhino_term_plot = ggplot(rhino_term_hunting, 
+                         aes(area = rhino_term_hunting$Freq, 
+                             fill=rhino_term_hunting$Var1,
+                             label=rhino_term_hunting$Var1)) +
+ geom_treemap() + geom_treemap_text(fontface = "italic", colour = "black", place = "centre") +
+  labs(fill="Terms")
+
+rhino_term_plot
+```
+
+
+```{r}
+rhino_exporter = data.frame(table(rhinos$Exporter))
+rhino_importer = data.frame(table(rhinos$Importer))
+
+country_map_rhino_importer = joinCountryData2Map(rhino_importer, joinCode="ISO2", nameJoinColumn="Var1")
+country_map_rhino_exporter = joinCountryData2Map(rhino_exporter, joinCode = "ISO2", 
+                                           nameJoinColumn="Var1")
+```
+
+```{r}
+mapCountryData(mapToPlot = country_map_exporter, nameColumnToPlot = "Freq")
+```
+
+```{r}
+mapCountryData(country_map_exporter)
 ```
 
